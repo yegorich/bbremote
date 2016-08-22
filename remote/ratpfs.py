@@ -97,7 +97,7 @@ class RatpFSServer(object):
                          os.O_TRUNC)
         path = params[4:]
         try:
-            f = os.open(self._resolve(path), flags, 0666)
+            f = os.open(self._resolve(path), flags, 0o666)
         except OSError as e:
             return struct.pack('!II', 0, e.errno)
         h = self._alloc_handle()

@@ -8,10 +8,16 @@ import logging
 import sys
 import os
 from threading import Thread
-from Queue import Queue, Empty
 from .ratpfs import RatpFSServer
 from .messages import *
 from .ratp import RatpError
+
+try:
+    from Queue import Queue
+    import Queue as queue
+except:
+    from queue import Queue
+    import queue
 
 try:
     from time import monotonic
@@ -77,7 +83,7 @@ class Controller(Thread):
 
     def _expect(self, bbtype, timeout=1.0):
         if timeout is not None:
-            limit = monotonic()+timeout
+            limit = monotonic() + timeout
         while timeout is None or limit > monotonic():
             pkt = self.conn.recv(0.1)
             if not pkt:
@@ -130,7 +136,7 @@ class Controller(Thread):
                 # send
                 try:
                     pkt = self._txq.get(block=False)
-                except Empty:
+                except queue.Empty:
                     pkt = None
                 if pkt:
                     self._send(pkt)

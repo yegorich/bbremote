@@ -3,6 +3,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+import sys
 import crcmod
 import logging
 import struct
@@ -44,7 +45,7 @@ class RatpError(ValueError):
 class RatpPacket(object):
 
     def __init__(self, data=None, flags=''):
-        self.payload = None
+        self.payload = bytearray()
         self.synch = 0x01
         self._control = 0
         self.length = 0
@@ -134,11 +135,15 @@ class RatpPacket(object):
         if c_recv != c_calc:
             raise RatpInvalidPayload("bad checksum (%04x != %04x)" %
                                      (c_recv, c_calc))
-        self.payload = payload[:-2]
+        self.payload = bytearray(payload[:-2])
 
     def pack_payload(self):
-        c_calc = csum_func(self.payload)
-        return self.payload+struct.pack('!H', c_calc)
+        if sys.version_info[0] == 2:
+            c_calc = csum_func(self.payload.decode('UTF-8'))
+        else:
+            c_calc = csum_func(self.payload)
+        self.payload.extend(struct.pack('!H', c_calc))
+        return self.payload
 
 
 class RatpConnection(object):
@@ -153,9 +158,9 @@ class RatpConnection(object):
         self._retrans_deadline = None
         self._r_mdl = None
         self._s_mdl = 0xff
-        self._rx_buf = [] # reassembly buffer
+        self._rx_buf = bytearray() # reassembly buffer
         self._rx_queue = []
-        self._tx_queue = []
+        self._tx_queue = bytearray()
         self._rtt_alpha = 0.8
         self._rtt_beta = 2.0
         self._srtt = 0.2
@@ -595,18 +600,18 @@ class RatpConnection(object):
 
         if r.c_so:
             self._r_sn = r.c_sn
-            self._rx_buf.append(chr(r.length))
+            self._rx_buf.extend(chr(r.length))
         elif r.length:
             self._r_sn = r.c_sn
-            self._rx_buf.append(r.payload)
+            self._rx_buf.extend(r.payload)
         else:
             return False
 
         # reassemble
         if r.c_eor:
             logging.info("Reassembling %i frames", len(self._rx_buf))
-            self._rx_queue.append(''.join(self._rx_buf))
-            self._rx_buf = []
+            self._rx_queue.append(self._rx_buf)
+            self._rx_buf = bytearray()
 
         s = RatpPacket(flags='A')
         s.c_sn = r.c_an

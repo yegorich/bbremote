@@ -5,7 +5,12 @@ import sys
 import termios
 import atexit
 from threading import Thread
-from Queue import Queue, Empty
+
+try:
+    from Queue import Queue
+except:
+    from queue import Queue
+
 
 class ConsoleInput(Thread):
     def __init__(self, queue, exit='\x14'):

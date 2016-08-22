@@ -6,8 +6,13 @@ import sys
 import os
 import argparse
 import logging
-from Queue import Queue
+
 from .ratp import RatpError
+
+try:
+    from Queue import Queue
+except:
+    from queue import Queue
 
 try:
     import serial
@@ -70,7 +75,7 @@ def handle_getenv(args):
     if not value:
         res = 1
     else:
-        print(value)
+        print(value.decode('utf-8'))
         res = 0
     ctrl.close()
     return res

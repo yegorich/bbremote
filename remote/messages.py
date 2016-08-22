@@ -25,7 +25,10 @@ class BBPacket(object):
         if raw is not None:
             self.unpack(raw)
         else:
-            self.payload = payload
+            if len(payload) > 0:
+                self.payload = bytearray(payload.encode('utf-8'))
+            else:
+                self.payload = bytearray()
 
     def __repr__(self):
         return "BBPacket(%i, %i)" % (self.p_type, self.p_flags)
@@ -41,8 +44,12 @@ class BBPacket(object):
         self._unpack_payload(data[4:])
 
     def pack(self):
-        return struct.pack("!HH", self.p_type, self.p_flags) + \
-            self._pack_payload()
+        res = bytearray(struct.pack("!HH", self.p_type, self.p_flags))
+        if type(self._pack_payload()) is str:
+            res.extend(self._pack_payload().encode('utf-8'))
+        else:
+            res.extend(self._pack_payload())
+        return res
 
 
 class BBPacketCommand(BBPacket):
